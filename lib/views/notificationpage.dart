@@ -16,12 +16,8 @@ class _NotificationPageState extends State<NotificationPage> {
       appBar: AppBar(
         title: const Text('Notification Page'),
       ),
-      body: const Column(
-        children: [
-          Center(
-            child: Text('Notification Page'),
-          ),
-        ],
+      body: const Center(
+        child: Text('Notification Page'),
       ),
     );
   }

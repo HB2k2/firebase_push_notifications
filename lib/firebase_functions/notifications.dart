@@ -18,7 +18,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 class FirebaseCM {
   static FirebaseMessaging messaging = FirebaseMessaging.instance;
 
-  static void permissionRequest() async {
+  Future<void> initNotifications() async {
     NotificationSettings settings = await messaging.requestPermission(
       alert: true,
       announcement: false,
@@ -33,21 +33,17 @@ class FirebaseCM {
     final fcmToken = await messaging.getToken();
     log('Token: $fcmToken');
 
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
     initPushNotification();
     initLocalNotifications();
   }
 
-  static void handleNavigation(RemoteMessage? message) {
-    log("--->message:$message");
+  void handleMessage(RemoteMessage? message) {
     if (message == null) return;
-
     navigatorKey.currentState
         ?.pushNamed(NotificationPage.route, arguments: message);
   }
 
-  static Future<void> initPushNotification() async {
+  Future initPushNotification() async {
     await FirebaseMessaging.instance
         .setForegroundNotificationPresentationOptions(
       alert: true,
@@ -55,51 +51,40 @@ class FirebaseCM {
       sound: true,
     );
 
-    FirebaseMessaging.instance.getInitialMessage().then(handleNavigation);
-    FirebaseMessaging.onMessageOpenedApp.listen(handleNavigation);
+    FirebaseMessaging.instance.getInitialMessage().then(handleMessage);
+    FirebaseMessaging.onMessageOpenedApp.listen(handleMessage);
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-    messageHandling();
-  }
-
-  static void messageHandling() async {
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    FirebaseMessaging.onMessage.listen((message) {
       final notification = message.notification;
-
-      log('Got a message whilst in the foreground!');
-      log('Message data: ${message.data}');
-
-      if (notification != null) {
-        _flutterLocalNotificationsPlugin.show(
-          notification.hashCode,
-          notification.title,
-          notification.body,
-          NotificationDetails(
-            android: AndroidNotificationDetails(
-              androidChannel.id,
-              androidChannel.name,
-              channelDescription: androidChannel.description,
-              icon: '@mipmap/ic_launcher',
-            ),
+      if (notification == null) return;
+      _flutterLocalNotificationsPlugin.show(
+        notification.hashCode,
+        notification.title,
+        notification.body,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            androidChannel.id,
+            androidChannel.name,
+            channelDescription: androidChannel.description,
+            icon: '@mipmap/ic_launcher',
           ),
-          payload: jsonEncode(message.toMap()),
-        );
-
-        log('Message also contained a notification: ${message.notification}');
-      }
+        ),
+        payload: jsonEncode(message.toMap()),
+      );
     });
   }
 
-  static const androidChannel = AndroidNotificationChannel(
+  final androidChannel = const AndroidNotificationChannel(
     'high_importance_channel',
     'High Importance Notifications',
     description: 'This channel is used for important notifications.',
     importance: Importance.high,
   );
 
-  static final FlutterLocalNotificationsPlugin
-      _flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
 
-  static Future<void> initLocalNotifications() async {
+  Future initLocalNotifications() async {
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
     const DarwinInitializationSettings initializationSettingsDarwin =
@@ -109,22 +94,16 @@ class FirebaseCM {
       requestSoundPermission: true,
     );
 
-    const InitializationSettings initializationSettings =
-        InitializationSettings(
+    const InitializationSettings settings = InitializationSettings(
       android: initializationSettingsAndroid,
       iOS: initializationSettingsDarwin,
     );
 
     _flutterLocalNotificationsPlugin.initialize(
-      initializationSettings,
+      settings,
       onDidReceiveNotificationResponse: (payload) async {
-        log("2.$payload at ${DateTime.now()}");
-        handleNavigation;
-      },
-      onDidReceiveBackgroundNotificationResponse: (payload) async {
-        log("2.$payload");
-        final messageData = jsonDecode(payload.toString());
-        handleNavigation(RemoteMessage.fromMap(messageData));
+        final message = RemoteMessage.fromMap(jsonDecode(payload.payload!));
+        handleMessage(message);
       },
     );
 
