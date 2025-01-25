@@ -65,9 +65,11 @@ class FirebaseCM {
           android: AndroidNotificationDetails(
             androidChannel.id,
             androidChannel.name,
-            channelDescription: androidChannel.description,
-            icon: '@mipmap/ic_launcher',
-          ),
+              channelDescription: androidChannel.description,
+              icon: '@mipmap/ic_launcher',
+              priority: Priority.high,
+              importance: Importance.high,
+              fullScreenIntent: true),
         ),
         payload: jsonEncode(message.toMap()),
       );

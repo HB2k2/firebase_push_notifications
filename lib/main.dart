@@ -1,4 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_notifications/firebase_functions/firestore.dart';
 import 'package:firebase_notifications/firebase_functions/notifications.dart';
 import 'package:flutter/material.dart';
 
@@ -11,6 +12,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   FirebaseCM().initNotifications();
+  FirebaseDB.addUniqueId();
   runApp(const MyApp());
 }
 
