@@ -1,14 +1,51 @@
 import 'dart:convert';
 import 'dart:developer';
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:firebase_notifications/main.dart';
 import 'package:firebase_notifications/views/notificationpage.dart';
+import 'package:firebase_notifications/views/orderpage.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+bool responded = false;
+
+class CustomAudioPlayer {
+  static AudioPlayer player = AudioPlayer();
+
+  static void playRingtone() {
+    log("Playing ringtone");
+    player.play(AssetSource('noti.wav')); // Play the ringtone
+    player.onPlayerComplete.listen((event) {
+      log("Ringtone completed");
+      player.play(AssetSource('noti.wav'));
+    });
+    player.onPlayerStateChanged.listen((event) {
+        
+        log(player.state.toString());
+        
+    });
+  }
+
+  static void stopRingtone() {
+    player.stop();
+    print("turned off Audio");
+  }
+}
+
+void showIncomingOrderScreen(String orderDetails) {
+  log("Showing incoming order screen");
+  runApp(MaterialApp(
+    debugShowCheckedModeBanner: false,
+    home: OrderScreen(orderDetails: orderDetails),
+  ));
+}
+
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  CustomAudioPlayer.playRingtone();
+  // showIncomingOrderScreen(message.notification?.body ?? "New Order");
   log("Handling a background message: ${message.messageId}");
   log("Handling a background message: ${message.notification?.title}");
   log("Handling a background message: ${message.notification?.body}");
@@ -38,6 +75,7 @@ class FirebaseCM {
   }
 
   void handleMessage(RemoteMessage? message) {
+    CustomAudioPlayer.stopRingtone();
     if (message == null) return;
     navigatorKey.currentState
         ?.pushNamed(NotificationPage.route, arguments: message);
@@ -55,6 +93,8 @@ class FirebaseCM {
     FirebaseMessaging.onMessageOpenedApp.listen(handleMessage);
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
     FirebaseMessaging.onMessage.listen((message) {
+      CustomAudioPlayer.playRingtone();
+      // showIncomingOrderScreen(message.notification?.body ?? "New Order");
       final notification = message.notification;
       if (notification == null) return;
       _flutterLocalNotificationsPlugin.show(
@@ -63,8 +103,7 @@ class FirebaseCM {
         notification.body,
         NotificationDetails(
           android: AndroidNotificationDetails(
-            androidChannel.id,
-            androidChannel.name,
+              androidChannel.id, androidChannel.name,
               channelDescription: androidChannel.description,
               icon: '@mipmap/ic_launcher',
               priority: Priority.high,
