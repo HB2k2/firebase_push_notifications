@@ -41,6 +41,9 @@ dependencies:
   cloud_firestore: ^5.6.2
   flutter_overlay_window: ^0.4.5
   audioplayers: ^6.1.2
+  just_audio_background: ^0.0.1-beta.15
+  just_audio: ^0.9.46
+  shared_preferences: ^2.5.2
 
 dev_dependencies:
   flutter_test:
